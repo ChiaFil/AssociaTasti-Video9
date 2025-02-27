@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Temporizzato</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        video, img {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            object-fit: cover;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        .upload-container {
+            margin-top: 20px;
+        }
+        label {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Premi un tasto (A-S-D-F-G-H-J-K-L) per avviare il video o mostrare l'immagine</h1>
+    <video id="videoPlayer" controls></video>
+    <img id="imageDisplay" src="image9.jpeg" alt="Immagine" style="display: none;">
+
+    <div class="upload-container">
+        <label for="file-a">Carica video per 'A'</label>
+        <input type="file" id="file-a" accept="video/*">
+        
+        <label for="file-s">Carica video per 'S'</label>
+        <input type="file" id="file-s" accept="video/*">
+        
+        <label for="file-d">Carica video per 'D'</label>
+        <input type="file" id="file-d" accept="video/*">
+        
+        <label for="file-f">Carica video per 'F'</label>
+        <input type="file" id="file-f" accept="video/*">
+        
+        <label for="file-g">Carica video per 'G'</label>
+        <input type="file" id="file-g" accept="video/*">
+        
+        <label for="file-h">Carica video per 'H'</label>
+        <input type="file" id="file-h" accept="video/*">
+        
+        <label for="file-j">Carica video per 'J'</label>
+        <input type="file" id="file-j" accept="video/*">
+        
+        <label for="file-k">Carica video per 'K'</label>
+        <input type="file" id="file-k" accept="video/*">
+        
+        <label for="file-l">Carica immagine per 'L'</label>
+        <input type="file" id="file-l" accept="image/*">
+    </div>
+
+    <script>
+        // Mappa dei file media (video e immagine) caricati
+        const mediaFiles = {
+            'a': null, 's': null, 'd': null,
+            'f': null, 'g': null, 'h': null,
+            'j': null, 'k': null, 'l': "image9.jpeg"
+        };
+
+        let mediaElements = {};
+        let activeKey = null;
+        let timer = null;
+        const duration = 5000; // Durata in millisecondi (5 secondi)
+        let mediaPositions = {}; // Mappa per memorizzare le posizioni di riproduzione dei video
+
+        // Crea gli elementi video per i tasti 'A' - 'K'
+        for (const key in mediaFiles) {
+            if (key !== 'l') {
+                let video = document.createElement("video");
+                video.style.display = "none";
+                video.controls = true;
+                video.style.position = "fixed";
+                video.style.top = "0";
+                video.style.left = "0";
+                video.style.width = "100vw";
+                video.style.height = "100vh";
+                video.style.objectFit = "cover";
+                document.body.appendChild(video);
+                mediaElements[key] = video;
+            }
+        }
+
+        let imageElement = document.getElementById("imageDisplay");
+
+        // Carica media salvati in memoria
+        function loadMediaFromMemory() {
+            for (const key in mediaFiles) {
+                if (mediaFiles[key] && key !== 'l') {
+                    mediaElements[key].src = mediaFiles[key];
+                } else if (key === 'l') {
+                    imageElement.src = mediaFiles[key];
+                }
+
+                // Ripristina la posizione di ciascun video, se esiste
+                if (mediaPositions[key] !== undefined) {
+                    mediaElements[key].currentTime = mediaPositions[key];
+                }
+            }
+        }
+
+        loadMediaFromMemory();
+
+        // Gestione dei file caricati tramite input
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', (event) => {
+                const key = event.target.id.replace('file-', '');
+                const file = event.target.files[0];
+                if (file) {
+                    const fileURL = URL.createObjectURL(file);
+                    mediaFiles[key] = fileURL;
+
+                    if (key === 'l') {
+                        imageElement.src = fileURL;
+                    } else {
+                        mediaElements[key].src = fileURL;
+                    }
+
+                    // Salva il file in memoria
+                    mediaPositions[key] = 0; // Inizializza la posizione al momento del caricamento
+                }
+            });
+        });
+
+        // Gestione dei tasti premuti
+        document.addEventListener("keydown", (event) => {
+            const key = event.key.toLowerCase();
+            if (mediaFiles[key]) {
+                playMedia(key);
+            }
+        });
+
+        function playMedia(key) {
+            if (activeKey && activeKey !== key) {
+                // Se c'era un video attivo, pausa e nascondi
+                if (mediaElements[activeKey]) {
+                    mediaElements[activeKey].pause();
+                    mediaElements[activeKey].style.display = "none";
+                    // Memorizza la posizione
+                    mediaPositions[activeKey] = mediaElements[activeKey].currentTime;
+                } else if (activeKey === 'l') {
+                    imageElement.style.display = "none";
+                }
+                clearTimeout(timer);
+            }
+
+            if (key === 'l') {
+                // Mostra immagine
+                imageElement.style.display = "block";
+                activeKey = key;
+                timer = setTimeout(() => {
+                    imageElement.style.display = "none";
+                }, duration);
+            } else {
+                let video = mediaElements[key];
+
+                // Mostra il video e riprendi dalla posizione salvata
+                video.style.display = "block";
+                video.play();
+                activeKey = key;
+
+                // Salva la posizione al termine del video
+                timer = setTimeout(() => {
+                    video.pause();
+                    video.style.display = "none";
+                    mediaPositions[key] = video.currentTime;
+                }, duration);
+            }
+        }
+    </script>
+</body>
+</html>
