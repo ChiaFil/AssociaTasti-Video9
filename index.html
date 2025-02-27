@@ -64,7 +64,6 @@
     </div>
 
     <script>
-        // Mappa dei file media (video e immagine) caricati
         const mediaFiles = {
             'a': null, 's': null, 'd': null,
             'f': null, 'g': null, 'h': null,
@@ -91,28 +90,26 @@
                 video.style.objectFit = "cover";
                 document.body.appendChild(video);
                 mediaElements[key] = video;
+                mediaPositions[key] = 0; // Posizione iniziale
             }
         }
 
         let imageElement = document.getElementById("imageDisplay");
 
-        // Carica media salvati in memoria
-        function loadMediaFromMemory() {
-            for (const key in mediaFiles) {
-                if (mediaFiles[key] && key !== 'l') {
-                    mediaElements[key].src = mediaFiles[key];
-                } else if (key === 'l') {
-                    imageElement.src = mediaFiles[key];
+        // Recupera i video e le immagini dal localStorage
+        window.onload = function() {
+            Object.keys(mediaFiles).forEach(key => {
+                const storedFile = localStorage.getItem(key);
+                if (storedFile) {
+                    mediaFiles[key] = storedFile;
+                    if (key === 'l') {
+                        imageElement.src = storedFile;
+                    } else {
+                        mediaElements[key].src = storedFile;
+                    }
                 }
-
-                // Ripristina la posizione di ciascun video, se esiste
-                if (mediaPositions[key] !== undefined) {
-                    mediaElements[key].currentTime = mediaPositions[key];
-                }
-            }
+            });
         }
-
-        loadMediaFromMemory();
 
         // Gestione dei file caricati tramite input
         document.querySelectorAll('input[type="file"]').forEach(input => {
@@ -123,14 +120,17 @@
                     const fileURL = URL.createObjectURL(file);
                     mediaFiles[key] = fileURL;
 
+                    // Salva il file nel localStorage
+                    localStorage.setItem(key, fileURL);
+
                     if (key === 'l') {
                         imageElement.src = fileURL;
                     } else {
                         mediaElements[key].src = fileURL;
                     }
 
-                    // Salva il file in memoria
-                    mediaPositions[key] = 0; // Inizializza la posizione al momento del caricamento
+                    // Inizializza la posizione del video
+                    mediaPositions[key] = 0;
                 }
             });
         });
@@ -167,17 +167,20 @@
             } else {
                 let video = mediaElements[key];
 
-                // Mostra il video e riprendi dalla posizione salvata
-                video.style.display = "block";
-                video.play();
-                activeKey = key;
+                // Se il video è già stato caricato
+                if (video.src) {
+                    video.style.display = "block";
+                    video.currentTime = mediaPositions[key]; // Riprende dalla posizione salvata
+                    video.play();
+                    activeKey = key;
 
-                // Salva la posizione al termine del video
-                timer = setTimeout(() => {
-                    video.pause();
-                    video.style.display = "none";
-                    mediaPositions[key] = video.currentTime;
-                }, duration);
+                    // Salva la posizione al termine del video
+                    timer = setTimeout(() => {
+                        video.pause();
+                        video.style.display = "none";
+                        mediaPositions[key] = video.currentTime;
+                    }, duration);
+                }
             }
         }
     </script>
