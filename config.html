@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configurazione Video</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        #video-config {
+            margin-bottom: 20px;
+        }
+        .video-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .video-item label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .video-item input[type="text"] {
+            width: 90%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Configurazione Video e Immagine</h1>
+    <div>
+        <label for="imageFile">Seleziona Immagine:</label>
+        <input type="file" id="imageFile" accept="image/*">
+    </div>
+    <div id="video-config">
+        <div class="video-item">
+            <label>Tasto:</label>
+            <input type="text" class="key" maxlength="1" placeholder="a">
+            <label>Link YouTube:</label>
+            <input type="text" class="link" placeholder="ID Video YouTube">
+        </div>
+    </div>
+    <button onclick="addVideo()">Aggiungi Video</button>
+    <button onclick="saveConfig()">Salva Configurazione</button>
+    <button onclick="openIndex()">INIZIA ATTIVITA'</button>
+    <button onclick="exportConfig()">Esporta Configurazione</button>
+    <input type="file" id="importFile" accept=".json" onchange="importConfig()">
+
+    <script>
+        function addVideo() {
+            const videoConfig = document.getElementById('video-config');
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.innerHTML = `
+                <label>Tasto:</label>
+                <input type="text" class="key" maxlength="1" placeholder="a">
+                <label>Link YouTube:</label>
+                <input type="text" class="link" placeholder="ID Video YouTube">
+            `;
+            videoConfig.appendChild(videoItem);
+        }
+
+        function saveConfig() {
+            const videoItems = document.querySelectorAll('.video-item');
+            const videoLinks = {};
+            videoItems.forEach(item => {
+                const key = item.querySelector('.key').value.toLowerCase();
+                const link = item.querySelector('.link').value;
+                if (key && link) {
+                    videoLinks[key] = link;
+                }
+            });
+            const imageFile = document.getElementById("imageFile").files[0];
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const imageData = event.target.result;
+                    localStorage.setItem('videoLinks', JSON.stringify(videoLinks));
+                    localStorage.setItem('imageData', imageData);
+                    alert('Configurazione salvata!');
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                localStorage.setItem('videoLinks', JSON.stringify(videoLinks));
+                localStorage.removeItem('imageData');
+                alert('Configurazione salvata!');
+            }
+        }
+
+        function openIndex() {
+            window.location.href = 'index.html';
+        }
+
+        function exportConfig() {
+            const videoLinks = JSON.parse(localStorage.getItem('videoLinks')) || {};
+            const imageData = localStorage.getItem('imageData') || null;
+            const config = { videoLinks: videoLinks, imageData: imageData };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "config.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importConfig() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const config = JSON.parse(event.target.result);
+                    localStorage.setItem('videoLinks', JSON.stringify(config.videoLinks));
+                    localStorage.setItem('imageData', config.imageData);
+                    alert('Configurazione importata!');
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Seleziona un file JSON.');
+            }
+        }
+    </script>
+</body>
+</html>
