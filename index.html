@@ -1,175 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Video YouTube con tasti e immagine</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-    #player {
-      width: 100vw;
-      height: 100vh;
-    }
-    #imageContainer {
-      display: none;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.8);
-      justify-content: center;
-      align-items: center;
-    }
-    #imageContainer img {
-      max-width: 90%;
-      max-height: 90%;
-    }
-    #letterContainer {
-      display: none;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: white;
-      justify-content: center;
-      align-items: center;
-      font-size: 10em;
-      color: black;
-    }
-  </style>
+    <title>Video YouTube con tasti e immagine</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #player {
+            width: 100vw;
+            height: 100vh;
+        }
+        #imageContainer {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        #imageContainer img {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        #letterContainer {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: white;
+            justify-content: center;
+            align-items: center;
+            font-size: 10em;
+            color: black;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <div id="player"></div>
-  <div id="imageContainer">
-    <img src="image9.jpeg" alt="Immagine">
-  </div>
-  <div id="letterContainer"></div>
+    <div id="player"></div>
+    <div id="imageContainer">
+        <img id="displayImage" src="" alt="Immagine">
+    </div>
+    <div id="letterContainer"></div>
 
-  <script>
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    var player;
-    var videoLinks = {
-      "a": "kVil4nv76_Y",
-      "s": "jUVUomEKidg",
-      "d": "5AmeuPS0rKk",
-      "f": "5F4l5bVcYns",
-      "g": "3QXH8GWrL5I",
-      "h": "2vy71iWxLso",
-      "j": "nXOpsMLuKHE",
-      "k": "vl_Gfn58jzI"
-    };
-    var durataIntervallo = 30000;
-    var intervallo;
-    var videoTempi = {};
-    var currentVideoId = null;
-    var bloccoTasti = false;
-    var immagineVisibile = false;
-    var letterePremute = [];
-    var immagineTimer; //Timer per l'immagine
-
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        playerVars: {
-          'playsinline': 1,
-          'autoplay': 0,
-          'controls': 1,
-          'fs': 1
-        },
-        events: {
-          'onReady': onPlayerReady
-        }
-      });
-    }
-
-    function onPlayerReady(event) {
-      document.addEventListener('keydown', function(event) {
-        var key = event.key.toLowerCase();
-        if (videoLinks.hasOwnProperty(key) && !bloccoTasti) {
-          nascondiImmagine();
-          bloccoTasti = true;
-          var newVideoId = videoLinks[key];
-          if (currentVideoId !== newVideoId) {
-            if (currentVideoId) {
-              videoTempi[currentVideoId] = player.getCurrentTime();
-            }
-            currentVideoId = newVideoId;
-            player.loadVideoById(currentVideoId, videoTempi[currentVideoId] || 0);
-          }
-          letterePremute.push(key);
-          toggleVideo();
-        } else if (key === 'l') {
-          toggleImage();
+        var player;
+        var videoLinks = JSON.parse(localStorage.getItem('videoLinks')) || {};
+        var imageData = localStorage.getItem('imageData');
+        if (imageData) {
+            document.getElementById("displayImage").src = imageData;
         } else {
-          nascondiImmagine();
+          document.getElementById("displayImage").src = "image9.jpeg";
         }
-      });
-    }
 
-    function toggleVideo() {
-      if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        clearInterval(intervallo);
-        bloccoTasti = false;
-      } else {
-        player.playVideo();
-        intervallo = setInterval(function() {
-          player.pauseVideo();
-          clearInterval(intervallo);
-          bloccoTasti = false;
-          mostraLettere();
-        }, durataIntervallo);
-      }
-    }
+        var durataIntervallo = 30000;
+        var intervallo;
+        var videoTempi = {};
+        var currentVideoId = null;
+        var bloccoTasti = false;
+        var immagineVisibile = false;
+        var letterePremute = [];
+        var immagineTimer;
+        var letteraTimer; // Timer per le lettere
 
-    function toggleImage() {
-      var imageContainer = document.getElementById('imageContainer');
-      immagineVisibile = !immagineVisibile;
-      imageContainer.style.display = immagineVisibile ? 'flex' : 'none';
-      if (immagineVisibile) {
-        player.pauseVideo();
-        letterePremute.push('l'); // Aggiunge la lettera 'l' quando l'immagine è visibile
-        immagineTimer = setTimeout(function() {
-          imageContainer.style.display = 'none';
-          immagineVisibile = false;
-          mostraLettere(); //Mostra le lettere dopo la fine dell'immagine
-        }, 5000); // Imposta il timer per 5 secondi
-      } else {
-        clearTimeout(immagineTimer); //Cancella il timer se l'immagine è nascosta
-      }
-    }
-
-    function nascondiImmagine() {
-      var imageContainer = document.getElementById('imageContainer');
-      imageContainer.style.display = 'none';
-      immagineVisibile = false;
-      clearTimeout(immagineTimer); //Cancella il timer se l'immagine è nascosta
-    }
-
-    function mostraLettere() {
-      if (letterePremute.length > 0) {
-        var letterContainer = document.getElementById('letterContainer');
-        letterContainer.textContent = letterePremute.map(letter => letter.toUpperCase()).join(" ");
-        letterContainer.style.display = 'flex';
-        if (player && player.getIframe()) {
-          player.getIframe().style.display = 'none';
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'playsinline': 1,
+                    'autoplay': 0,
+                    'controls': 1,
+                    'fs': 1
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
         }
-        setTimeout(function() {
-          letterContainer.style.display = 'none';
-          if (player && player.getIframe()) {
-            player.getIframe().style.display = 'block';
-          }
-        }, 2000);
-      }
-    }
-  </script>
+
+        function onPlayerReady(event) {
+            document.addEventListener('keydown', function(event) {
+                var key = event.key.toLowerCase();
+                if (videoLinks && videoLinks.hasOwnProperty(key) && !bloccoTasti) {
+                    nascondiImmagine();
+                    bloccoTasti = true;
+                    letterePremute.push(key);
+                    mostraLettere(); // Mostra tutte le lettere premute
+                } else if (key === 'l' && !bloccoTasti) {
+                    nascondiImmagine();
+                    bloccoTasti = true;
+                    letterePremute.push(key);
+                    mostraLettere();
+                } else {
+                    nascondiImmagine();
+                }
+            });
+        }
+
+        function mostraLettere() {
+            var letterContainer = document.getElementById('letterContainer');
+            //letterContainer.textContent = letterePremute.map(letter => letter.toUpperCase()).join(" ");
+            letterContainer.textContent = letterePremute[letterePremute.length - 1].toUpperCase(); // Mostra solo l'ultima lettera
+            letterContainer.style.display = 'flex';
+            if (player && player.getIframe()) {
+                player.getIframe().style.display = 'none';
+            }
+            letteraTimer = setTimeout(function() {
+                letterContainer.style.display = 'none';
+                if (player && player.getIframe()) {
+                    player.getIframe().style.display = 'block';
+                }
+                caricaVideo(); // Carica il video o mostra l'immagine dopo che le lettere sono state nascoste
+            }, 5000);
+        }
+
+        function caricaVideo() {
+            var key = letterePremute[letterePremute.length - 1]; // Prende l'ultima lettera premuta
+            if (key === 'l') {
+                toggleImage(); // Mostra l'immagine se l'ultima lettera è 'l'
+            } else {
+                var newVideoId = videoLinks[key];
+                if (currentVideoId !== newVideoId) {
+                    if (currentVideoId) {
+                        videoTempi[currentVideoId] = player.getCurrentTime();
+                    }
+                    currentVideoId = newVideoId;
+                    player.loadVideoById(currentVideoId, videoTempi[currentVideoId] || 0);
+                }
+                toggleVideo();
+            }
+        }
+
+        function toggleVideo() {
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+                clearInterval(intervallo);
+                bloccoTasti = false;
+            } else {
+                player.playVideo();
+                intervallo = setInterval(function() {
+                    player.pauseVideo();
+                    clearInterval(intervallo);
+                    bloccoTasti = false;
+                }, durataIntervallo);
+            }
+        }
+
+        function toggleImage() {
+            var imageContainer = document.getElementById('imageContainer');
+            immagineVisibile = !immagineVisibile;
+            imageContainer.style.display = immagineVisibile ? 'flex' : 'none';
+            if (immagineVisibile) {
+                player.pauseVideo();
+                immagineTimer = setTimeout(function() {
+                    imageContainer.style.display = 'none';
+                    immagineVisibile = false;
+                    bloccoTasti = false; // Permetti di premere altri tasti dopo che l'immagine è stata nascosta
+                }, 5000);
+            } else {
+                clearTimeout(immagineTimer);
+                bloccoTasti = false; // Permetti di premere altri tasti se l'immagine è nascosta
+            }
+        }
+
+        function nascondiImmagine() {
+            var imageContainer = document.getElementById('imageContainer');
+            imageContainer.style.display = 'none';
+            immagineVisibile = false;
+            clearTimeout(immagineTimer);
+        }
+    </script>
 </body>
 </html>
